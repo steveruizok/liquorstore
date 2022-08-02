@@ -13,12 +13,9 @@ export function Canvas() {
     [store]
   )
 
-  const handlePointerUp = React.useCallback(
-    (e: React.PointerEvent<SVGSVGElement>) => {
-      store.stopPointingCanvas()
-    },
-    [store]
-  )
+  const handlePointerUp = React.useCallback(() => {
+    store.stopPointingCanvas()
+  }, [store])
 
   const handlePointerMove = React.useCallback(
     (e: React.PointerEvent<SVGSVGElement>) => {
