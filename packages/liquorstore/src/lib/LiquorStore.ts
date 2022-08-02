@@ -1,5 +1,4 @@
 import * as React from "react"
-import cloneDeep from "lodash.clonedeep"
 import { EventEmitter } from "eventemitter3"
 import { diff } from "./diff"
 import { Difference } from "./types"
@@ -144,6 +143,11 @@ export class LiquorStore<T extends Record<string, any>> extends EventEmitter {
 
   // PUBLIC API
 
+  subscribe = (listener: () => void) => {
+    this.subscriptions.add(listener)
+    return () => this.subscriptions.delete(listener)
+  }
+
   /**
    * Set a new state by mutating the current state.
    *
@@ -158,7 +162,7 @@ export class LiquorStore<T extends Record<string, any>> extends EventEmitter {
    */
 
   mutate = (mutator: (state: T) => void) => {
-    const draft = cloneDeep(this.current)
+    const draft = structuredClone(this.current)
     mutator(draft)
     const patch: Difference[] = diff(this.current, this.processState(draft))
     const next = this.applyPatch(patch)
@@ -343,11 +347,6 @@ export class LiquorStore<T extends Record<string, any>> extends EventEmitter {
    */
   getCanRedo = () => {
     return this.canRedo
-  }
-
-  subscribe = (listener: () => void) => {
-    this.subscriptions.add(listener)
-    return () => this.subscriptions.delete(listener)
   }
 
   /**

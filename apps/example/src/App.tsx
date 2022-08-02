@@ -8,7 +8,7 @@ function App() {
 
   return (
     <storeContext.Provider value={store}>
-      <CCanvas />
+      <Canvas />
       <Controls />
     </storeContext.Provider>
   )

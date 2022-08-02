@@ -1,5 +1,4 @@
 import React, { useSyncExternalStore } from "react"
-import { nanoid } from "nanoid"
 import {
   produce,
   enablePatches,

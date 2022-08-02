@@ -13,7 +13,7 @@ export function Controls() {
         node.x += 100
       }
     })
-  }, [])
+  }, [store])
 
   const handleJumpAll = React.useCallback(() => {
     store.mutate((s) => {
@@ -21,7 +21,7 @@ export function Controls() {
         n.x += 100
       })
     })
-  }, [])
+  }, [store])
 
   return (
     <div
