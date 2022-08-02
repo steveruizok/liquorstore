@@ -3,6 +3,12 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "licence": "MIT",
+  "author": {
+    "name": "Steve Ruiz",
+    "email": "steve@tldraw.com",
+    "url": "https://steveruiz.me"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",

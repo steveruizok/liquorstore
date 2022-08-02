@@ -2,10 +2,17 @@
   "name": "liquorstore-monorepo",
   "version": "0.0.0",
   "private": true,
+  "description": "A reactive store for React.",
   "workspaces": [
     "apps/*",
     "packages/*"
   ],
+  "license": "MIT",
+  "author": {
+    "name": "Steve Ruiz",
+    "email": "steve@tldraw.com",
+    "url": "https://steveruiz.me"
+  },
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev --parallel",
@@ -18,9 +25,7 @@
     "@typescript-eslint/parser": "^5.27.0",
     "eslint-plugin-no-only-tests": "^2.6.0",
     "prettier": "latest",
-    "turbo": "latest"
-  },
-  "dependencies": {
+    "turbo": "latest",
     "@changesets/cli": "^2.24.1"
   }
 }

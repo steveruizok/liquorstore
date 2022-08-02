@@ -156,20 +156,14 @@ export class LiquorStore<T extends Record<string, any>> extends EventEmitter {
    * @param mutator A function that receives the current state and mutates it.
    * @public
    */
+
   mutate = (mutator: (state: T) => void) => {
-    // Todo: Is there a way to specify which part of the state we'll be mutating? e.g. mutate("nodes.box1", (node) => { ... })
     const draft = cloneDeep(this.current)
-
     mutator(draft)
-
     const patch: Difference[] = diff(this.current, this.processState(draft))
-
     const next = this.applyPatch(patch)
-
     this.willChange()
-
     this.current = next
-
     this.didChange(patch)
   }
 

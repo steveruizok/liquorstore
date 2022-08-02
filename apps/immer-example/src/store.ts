@@ -1,6 +1,6 @@
 import * as React from "react"
 import { nanoid } from "nanoid"
-import { LiquorStore } from "liquorstore"
+import { ImmerStore } from "./ImmerStore"
 
 export interface INode {
   id: string
@@ -16,7 +16,7 @@ export interface IStore extends Record<string, any> {
   nodes: Record<string, INode>
 }
 
-export class Store extends LiquorStore<IStore> {
+export class Store extends ImmerStore<IStore> {
   startPointingNode = (id: string) => {
     this.pause()
     this.mutate((s) => {

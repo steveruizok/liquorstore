@@ -10,55 +10,14 @@ import {
 
 enablePatches()
 
-export interface INode {
-  id: string
-  x: number
-  y: number
-  width: number
-  height: number
-}
-
-export interface IStore extends Record<string, any> {
-  status: "idle" | "pointing"
-  selectedId: string | null
-  nodes: Record<string, INode>
-}
-
-class ImmerStore {
-  constructor(initial: IStore) {
+export class ImmerStore<T extends Record<string, any>> {
+  constructor(initial: T) {
     this.prev = initial
     this.current = initial
   }
 
-  prev: IStore
-  current: IStore
-
-  mutate = (fn: (state: IStore) => void) => {
-    this.willChange()
-    this.current = produce(this.current, fn, this.didChange)
-  }
-
-  // History
-
-  pointer = -1
-  history: Patch[][][] = []
-
-  pausedHistory: Patch[][] = [[], []]
-
-  isPaused = false
-
-  didChangeWhilePaused = false
-
-  get canUndo() {
-    return (
-      this.pointer >= 0 ||
-      (this.pointer === 0 && this.isPaused && this.didChangeWhilePaused)
-    )
-  }
-
-  get canRedo() {
-    return this.pointer < this.history.length - 1
-  }
+  private prev: T
+  private current: T
 
   willChange = () => {
     if (this.isPaused) {
@@ -82,6 +41,37 @@ class ImmerStore {
     }
 
     this.notifySubscribers()
+  }
+
+  mutate = (fn: (state: T) => void) => {
+    this.willChange()
+    this.current = produce(this.current, fn, this.didChange)
+  }
+
+  // History
+
+  pointer = -1
+  history: Patch[][][] = []
+
+  pausedHistory: Patch[][] = [[], []]
+
+  isPaused = false
+
+  didChangeWhilePaused = false
+
+  get state() {
+    return this.current
+  }
+
+  get canUndo() {
+    return (
+      this.pointer >= 0 ||
+      (this.pointer === 0 && this.isPaused && this.didChangeWhilePaused)
+    )
+  }
+
+  get canRedo() {
+    return this.pointer < this.history.length - 1
   }
 
   /**
@@ -215,114 +205,16 @@ class ImmerStore {
   // React
 
   useStore = () => {
-    return useSyncExternalStore<IStore>(this.subscribe, this.getState)
+    return useSyncExternalStore<T>(this.subscribe, this.getState)
   }
 
-  useSelector = <K extends (state: IStore) => any>(selector: K) => {
+  useSelector = <K extends (state: T) => any>(selector: K) => {
     const fn = React.useCallback(() => selector(this.getState()), [selector])
     return useSyncExternalStore<ReturnType<K>>(this.subscribe, fn)
   }
 
-  useStaticSelector = <K extends (state: IStore) => any>(selector: K) => {
+  useStaticSelector = <K extends (state: T) => any>(selector: K) => {
     const [fn] = React.useState(() => () => selector(this.getState()))
     return useSyncExternalStore<ReturnType<K>>(this.subscribe, fn)
   }
-
-  // ------
-
-  // EVENTS
-
-  startPointingNode = (id: string) => {
-    this.pause()
-    this.mutate((s) => {
-      s.selectedId = id
-      s.status = "pointing"
-    })
-  }
-
-  movePointingNode = (dx: number, dy: number, shiftKey: boolean) => {
-    const { current } = this
-
-    if (current.status === "pointing" && current.selectedId) {
-      if (shiftKey) {
-        this.mutate((s) => {
-          Object.values(s.nodes).forEach((n) => {
-            n.x += dx
-            n.y += dy
-          })
-        })
-
-        return
-      }
-
-      this.mutate((s) => {
-        const node = s.nodes[s.selectedId!]
-        node.x += dx
-        node.y += dy
-      })
-    }
-  }
-
-  stopPointingNode = () => {
-    this.mutate((s) => {
-      s.status = "idle"
-      s.selectedId = null
-    })
-
-    this.resume()
-  }
-
-  startPointingCanvas = (x: number, y: number) => {
-    const id = nanoid()
-
-    this.pause()
-
-    this.mutate((s) => {
-      s.nodes[id] = { id, x: x - 50, y: y - 50, width: 100, height: 100 }
-      s.selectedId = id
-      s.status = "pointing"
-    })
-  }
-
-  stopPointingCanvas = () => {
-    this.mutate((s) => {
-      s.status = "idle"
-      s.selectedId = null
-    })
-
-    this.resume()
-  }
 }
-
-export const storeContext = React.createContext({} as ImmerStore)
-
-const INITIAL_STATE: IStore = {
-  status: "idle",
-  selectedId: null,
-  nodes: {},
-}
-
-const NODE_COUNT = 1000
-const SIZE = 8
-const PADDING = 2
-
-const rows = Math.floor(Math.sqrt(NODE_COUNT))
-
-for (let i = 0; i < NODE_COUNT; i++) {
-  const id = nanoid()
-  INITIAL_STATE.nodes[id] = {
-    id,
-    x: 0 + (i % rows) * (SIZE + PADDING),
-    y: 64 + Math.floor(i / rows) * (SIZE + PADDING),
-    width: SIZE,
-    height: SIZE,
-  }
-}
-
-export const useStoreInitializer = () => {
-  const [store] = React.useState(() => new ImmerStore(INITIAL_STATE))
-
-  return store
-}
-
-export const useStoreContext = () => React.useContext(storeContext)

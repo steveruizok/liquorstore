@@ -2,8 +2,12 @@
   "name": "liquorstore",
   "version": "0.2.0",
   "description": "A reactive store for React.",
-  "author": "Steve Ruiz",
   "license": "MIT",
+  "author": {
+    "name": "Steve Ruiz",
+    "email": "steve@tldraw.com",
+    "url": "https://steveruiz.me"
+  },
   "private": false,
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
