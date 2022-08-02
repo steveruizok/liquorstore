@@ -23,11 +23,9 @@
   },
   "dependencies": {
     "eventemitter3": "^4.0.7",
-    "lodash.clonedeep": "^4.5.0",
     "react": "^18"
   },
   "devDependencies": {
-    "@types/lodash.clonedeep": "^4.5.7",
     "vitest": "^0.19.1",
     "@swc/core": "^1.2.204",
     "@swc/jest": "^0.2.21",
