@@ -2,6 +2,12 @@ import * as React from "react"
 import { EventEmitter } from "eventemitter3"
 import { diff } from "./diff"
 import { Difference } from "./types"
+import _cloneDeep from "lodash.clonedeep"
+
+const structuredClone =
+  typeof window !== "undefined" && (window as any).structuredClone
+    ? window.structuredClone
+    : _cloneDeep
 
 export class LiquorStore<T extends Record<string, any>> extends EventEmitter {
   constructor(initial: T) {
@@ -47,7 +53,7 @@ export class LiquorStore<T extends Record<string, any>> extends EventEmitter {
     this.subscriptions.forEach((l) => l())
   }
 
-  protected applyPatch(patch: Difference[], inverse?: boolean) {
+  applyPatch(patch: Difference[], inverse?: boolean) {
     const refs = new Set<string | number>()
     const lastRefs = new Set<string | number>()
     const delQueue: (() => void)[] = []
@@ -71,7 +77,9 @@ export class LiquorStore<T extends Record<string, any>> extends EventEmitter {
 
         if (!refs.has(key)) {
           refs.add(key)
-          t[step] = Object.assign({}, t[step])
+          t[step] = Array.isArray(t[step])
+            ? [...t[step]]
+            : Object.assign({}, t[step])
         }
 
         t = t[step]
@@ -104,6 +112,7 @@ export class LiquorStore<T extends Record<string, any>> extends EventEmitter {
           }
         }
       } else {
+        console.log(op, t, lastKey)
         // Apply the operation
         switch (op.type) {
           case "CREATE": {
@@ -111,6 +120,7 @@ export class LiquorStore<T extends Record<string, any>> extends EventEmitter {
             break
           }
           case "CHANGE": {
+            console.log(t, lastKey)
             t[lastKey] = op.value
             break
           }

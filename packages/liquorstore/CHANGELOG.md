@@ -1,5 +1,17 @@
 # trashly-react
 
+## 0.2.4
+
+### Patch Changes
+
+- Fix deps.
+
+## 0.2.3
+
+### Patch Changes
+
+- fix build outputs
+
 ## 0.2.2
 
 ### Patch Changes

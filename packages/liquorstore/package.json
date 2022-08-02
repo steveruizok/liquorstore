@@ -1,6 +1,6 @@
 {
   "name": "liquorstore",
-  "version": "0.2.2",
+  "version": "0.2.4",
   "description": "A reactive store for React.",
   "license": "MIT",
   "author": {
@@ -23,14 +23,15 @@
   },
   "dependencies": {
     "eventemitter3": "^4.0.7",
+    "lodash.clonedeep": "^4.5.0",
     "react": "^18"
   },
   "devDependencies": {
-    "vitest": "^0.19.1",
-    "@swc/core": "^1.2.204",
-    "@swc/jest": "^0.2.21",
-    "@types/jest": "^28.1.2",
     "@tldraw/lfg": "^1.1.5",
-    "tsconfig": "*"
+    "@types/jest": "^28.1.2",
+    "@types/lodash.clonedeep": "^4.5.7",
+    "@ungap/structured-clone": "^1.0.1",
+    "tsconfig": "*",
+    "vitest": "^0.19.1"
   }
 }
