@@ -1,5 +1,11 @@
 # trashly-react
 
+## 0.2.8
+
+### Patch Changes
+
+- Fix returns on undo / redo
+
 ## 0.2.7
 
 ### Patch Changes

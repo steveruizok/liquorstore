@@ -181,6 +181,7 @@ export class LiquorStore<T extends Record<string, any>> extends EventEmitter {
     this.willChange()
     this.current = next
     this.didChange(patch)
+    return this
   }
 
   /**
@@ -193,17 +194,11 @@ export class LiquorStore<T extends Record<string, any>> extends EventEmitter {
    */
   update = (fn: (state: T) => void) => {
     this.willChange()
-
     const tNext = Object.assign({}, this.current)
-
     fn(tNext)
-
     this.current = this.processState(tNext)
-
     const patch = diff(this.prev, this.current)
-
     this.didChange(patch)
-
     return this
   }
 
@@ -261,16 +256,16 @@ export class LiquorStore<T extends Record<string, any>> extends EventEmitter {
       this.isPaused = false
     }
 
-    if (!this.canUndo) return
+    if (this.canUndo) {
+      const patch = this.history[this.pointer]
 
-    const patch = this.history[this.pointer]
+      this.pointer--
+      this.prev = this.current
+      this.current = this.applyPatch(patch, true)
 
-    this.pointer--
-    this.prev = this.current
-    this.current = this.applyPatch(patch, true)
-
-    this.emit("undo")
-    this.notifySubscriptions(patch)
+      this.emit("undo")
+      this.notifySubscriptions(patch)
+    }
 
     return this
   }
@@ -294,17 +289,17 @@ export class LiquorStore<T extends Record<string, any>> extends EventEmitter {
       this.isPaused = false
     }
 
-    if (!this.canRedo) return
+    if (this.canRedo) {
+      this.pointer++
 
-    this.pointer++
+      const patch = this.history[this.pointer]
 
-    const patch = this.history[this.pointer]
+      this.prev = this.current
+      this.current = this.applyPatch(patch)
 
-    this.prev = this.current
-    this.current = this.applyPatch(patch)
-
-    this.emit("redo")
-    this.notifySubscriptions(patch)
+      this.emit("redo")
+      this.notifySubscriptions(patch)
+    }
 
     return this
   }
