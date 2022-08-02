@@ -31,14 +31,14 @@ export class Store extends ImmerStore<IStore> {
     if (state.status === "pointing" && state.selectedId) {
       this.mutate((s) => {
         if (shiftKey) {
-          Object.values(s.nodes).forEach((n) => {
-            s.nodes[n.id].x += dx
-            s.nodes[n.id].y += dy
-          })
+          for (let id in s.nodes) {
+            s.nodes[id].x += dx
+            s.nodes[id].y += dy
+          }
         } else {
-          const n = s.nodes[s.selectedId!]
-          s.nodes[n.id].x += dx
-          s.nodes[n.id].y += dy
+          const id = s.selectedId!
+          s.nodes[id].x += dx
+          s.nodes[id].y += dy
         }
       })
     }
