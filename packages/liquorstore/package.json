@@ -1,0 +1,34 @@
+{
+  "name": "liquorstore",
+  "version": "0.1.6",
+  "description": "A reactive store for React.",
+  "author": "Steve Ruiz",
+  "license": "MIT",
+  "private": false,
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "source": "./src/index.ts",
+  "scripts": {
+    "test": "vitest",
+    "test:ci": "vitest run",
+    "dev": "lfg -d",
+    "build": "lfg",
+    "build:packages": "yarn build",
+    "lint": "TIMING=1 eslint src --fix"
+  },
+  "dependencies": {
+    "eventemitter3": "^4.0.7",
+    "lodash.clonedeep": "^4.5.0",
+    "react": "^18"
+  },
+  "devDependencies": {
+    "@types/lodash.clonedeep": "^4.5.7",
+    "vitest": "^0.19.1",
+    "@swc/core": "^1.2.204",
+    "@swc/jest": "^0.2.21",
+    "@types/jest": "^28.1.2",
+    "@tldraw/lfg": "^1.1.5",
+    "tsconfig": "*"
+  }
+}

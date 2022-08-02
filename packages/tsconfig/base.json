@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "Default",
+  "compilerOptions": {
+    "composite": true,
+    "declaration": true,
+    "declarationMap": false,
+    "sourceMap": false,
+    "emitDeclarationOnly": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": false,
+    "importHelpers": true,
+    "resolveJsonModule": true,
+    "incremental": true,
+    "jsx": "preserve",
+    "lib": [
+      "dom",
+      "esnext"
+    ],
+    "experimentalDecorators": true,
+    "module": "esnext",
+    "moduleResolution": "node",
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitAny": true,
+    "noImplicitReturns": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "skipLibCheck": true,
+    "strict": true,
+    "strictFunctionTypes": true,
+    "strictNullChecks": true,
+    "stripInternal": true,
+    "useDefineForClassFields": true,
+    "target": "esnext",
+    "types": [
+      "node",
+      "jest"
+    ]
+  },
+  "exclude": [
+    "node_modules"
+  ]
+}

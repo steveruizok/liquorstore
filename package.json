@@ -1,0 +1,26 @@
+{
+  "name": "liquorstore-monorepo",
+  "version": "0.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev --parallel",
+    "lint": "turbo run lint",
+    "test": "turbo run test:ci",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\""
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.27.0",
+    "@typescript-eslint/parser": "^5.27.0",
+    "eslint-plugin-no-only-tests": "^2.6.0",
+    "prettier": "latest",
+    "turbo": "latest"
+  },
+  "dependencies": {
+    "@changesets/cli": "^2.24.1"
+  }
+}
