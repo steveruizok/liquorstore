@@ -1,5 +1,5 @@
 import React from "react"
-import { INode, Store, storeContext } from "../store"
+import { Store, storeContext } from "../store"
 import { CNode } from "./CNode"
 
 export class CCanvas extends React.PureComponent {
