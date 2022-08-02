@@ -62,11 +62,12 @@ export class LiquorStore<T extends Record<string, any>> extends EventEmitter {
     // For each operation in the patch...
     for (const op of patch) {
       const { path } = op
-      let secondToLastKey = path[path.length - 1]
+      let secondToLastKey = path[path.length - 2]
       let lastKey = path[path.length - 1]
 
       lastRefs.add(path.slice(0, -1).join("."))
 
+      let p = next as any
       let t = next as any
 
       // Create new object references for each step in the op's path,
@@ -82,6 +83,7 @@ export class LiquorStore<T extends Record<string, any>> extends EventEmitter {
             : Object.assign({}, t[step])
         }
 
+        p = t
         t = t[step]
       }
 
@@ -101,10 +103,10 @@ export class LiquorStore<T extends Record<string, any>> extends EventEmitter {
               t[lastKey as number] = REMOVE_SYMBOL
               delQueue.push(() => {
                 if (secondToLastKey !== undefined)
-                  t[secondToLastKey] = t[secondToLastKey].filter(
+                  p[secondToLastKey] = p[secondToLastKey].filter(
                     (x: any) => x !== REMOVE_SYMBOL
                   )
-                else t.filter((x: any) => x !== REMOVE_SYMBOL)
+                else p.filter((x: any) => x !== REMOVE_SYMBOL)
               })
             } else delete t[lastKey]
 
@@ -112,7 +114,6 @@ export class LiquorStore<T extends Record<string, any>> extends EventEmitter {
           }
         }
       } else {
-        console.log(op, t, lastKey)
         // Apply the operation
         switch (op.type) {
           case "CREATE": {
@@ -120,7 +121,6 @@ export class LiquorStore<T extends Record<string, any>> extends EventEmitter {
             break
           }
           case "CHANGE": {
-            console.log(t, lastKey)
             t[lastKey] = op.value
             break
           }
@@ -128,11 +128,13 @@ export class LiquorStore<T extends Record<string, any>> extends EventEmitter {
             if (Array.isArray(t)) {
               t[lastKey as number] = REMOVE_SYMBOL
               delQueue.push(() => {
-                if (secondToLastKey !== undefined)
-                  t[secondToLastKey] = t[secondToLastKey].filter(
+                if (secondToLastKey !== undefined) {
+                  p[secondToLastKey] = p[secondToLastKey].filter(
                     (x: any) => x !== REMOVE_SYMBOL
                   )
-                else t.filter((x: any) => x !== REMOVE_SYMBOL)
+                } else {
+                  t.filter((x: any) => x !== REMOVE_SYMBOL)
+                }
               })
             } else delete t[lastKey]
 

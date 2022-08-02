@@ -1,5 +1,23 @@
 # trashly-react
 
+## 0.2.7
+
+### Patch Changes
+
+- Fix log
+
+## 0.2.6
+
+### Patch Changes
+
+- Fix arrays, add tests.
+
+## 0.2.5
+
+### Patch Changes
+
+- Fix arrays.
+
 ## 0.2.4
 
 ### Patch Changes
