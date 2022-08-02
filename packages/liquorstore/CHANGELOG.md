@@ -1,5 +1,11 @@
 # trashly-react
 
+## 0.2.2
+
+### Patch Changes
+
+- Use structuredClone
+
 ## 0.2.1
 
 ### Patch Changes
