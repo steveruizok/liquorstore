@@ -45,11 +45,11 @@ export class LiquorStore<T extends Record<string, any>> extends EventEmitter {
       this.pointer++
     }
 
-    this.notifySubscriptions(patch)
+    this.notifySubscriptions(patch, true)
   }
 
-  protected notifySubscriptions(patch?: Difference[]) {
-    this.emit("change", this, patch)
+  protected notifySubscriptions(patch: Difference[], history: boolean) {
+    this.emit("change", this, patch, history)
     this.subscriptions.forEach((l) => l())
   }
 
@@ -185,7 +185,7 @@ export class LiquorStore<T extends Record<string, any>> extends EventEmitter {
       this.didChange(patch)
     } else {
       this.current = next
-      this.notifySubscriptions(patch)
+      this.notifySubscriptions(patch, false)
     }
 
     return this
@@ -208,7 +208,7 @@ export class LiquorStore<T extends Record<string, any>> extends EventEmitter {
     if (history) {
       this.didChange(patch)
     } else {
-      this.notifySubscriptions(patch)
+      this.notifySubscriptions(patch, history)
     }
     return this
   }
@@ -221,7 +221,7 @@ export class LiquorStore<T extends Record<string, any>> extends EventEmitter {
    */
   pause = () => {
     this.isPaused = true
-    this.notifySubscriptions()
+    this.notifySubscriptions([], false)
     this.emit("pause", this)
     return this
   }
@@ -245,7 +245,7 @@ export class LiquorStore<T extends Record<string, any>> extends EventEmitter {
 
     this.isPaused = false
     this.emit("resume")
-    this.notifySubscriptions()
+    this.notifySubscriptions([], false)
     return this
   }
 
@@ -275,7 +275,7 @@ export class LiquorStore<T extends Record<string, any>> extends EventEmitter {
       this.current = this.applyPatch(patch, true)
 
       this.emit("undo")
-      this.notifySubscriptions(patch)
+      this.notifySubscriptions(patch, false)
     }
 
     return this
@@ -309,7 +309,7 @@ export class LiquorStore<T extends Record<string, any>> extends EventEmitter {
       this.current = this.applyPatch(patch)
 
       this.emit("redo")
-      this.notifySubscriptions(patch)
+      this.notifySubscriptions(patch, false)
     }
 
     return this
