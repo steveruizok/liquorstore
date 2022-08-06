@@ -173,14 +173,21 @@ export class LiquorStore<T extends Record<string, any>> extends EventEmitter {
    * @public
    */
 
-  mutate = (mutator: (state: T) => void) => {
+  mutate = (mutator: (state: T) => void, history = true) => {
     const draft = structuredClone(this.current)
     mutator(draft)
     const patch: Difference[] = diff(this.current, this.processState(draft))
     const next = this.applyPatch(patch)
-    this.willChange()
-    this.current = next
-    this.didChange(patch)
+
+    if (history) {
+      this.willChange()
+      this.current = next
+      this.didChange(patch)
+    } else {
+      this.current = next
+      this.notifySubscriptions(patch)
+    }
+
     return this
   }
 
@@ -192,13 +199,17 @@ export class LiquorStore<T extends Record<string, any>> extends EventEmitter {
    *   state.user.address.street = "123 Main St"
    * })
    */
-  update = (fn: (state: T) => void) => {
+  update = (fn: (state: T) => void, history = true) => {
     this.willChange()
     const tNext = Object.assign({}, this.current)
     fn(tNext)
     this.current = this.processState(tNext)
     const patch = diff(this.prev, this.current)
-    this.didChange(patch)
+    if (history) {
+      this.didChange(patch)
+    } else {
+      this.notifySubscriptions(patch)
+    }
     return this
   }
 
