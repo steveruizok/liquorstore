@@ -1,5 +1,11 @@
 # trashly-react
 
+## 0.2.9
+
+### Patch Changes
+
+- Add option to skip history.
+
 ## 0.2.8
 
 ### Patch Changes
