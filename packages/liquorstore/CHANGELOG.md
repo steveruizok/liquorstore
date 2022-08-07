@@ -1,5 +1,23 @@
 # trashly-react
 
+## 0.3.1
+
+### Patch Changes
+
+- Fix types on useStaticPathSelector
+
+## 0.3.0
+
+### Minor Changes
+
+- Adds useStaticPathSelector
+
+## 0.2.10
+
+### Patch Changes
+
+- Add history flag to change event
+
 ## 0.2.9
 
 ### Patch Changes

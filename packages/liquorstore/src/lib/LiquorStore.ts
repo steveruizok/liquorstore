@@ -425,7 +425,24 @@ export class LiquorStore<T extends Record<string, any>> extends EventEmitter {
       const forceUpdate = () => ss((s) => s + 1)
       this.addListener(path, forceUpdate)
       return () => void this.removeListener(path, forceUpdate)
+    }, [path])
+  }
+
+  useStaticPathSelector = <K extends (state: T) => any>(
+    path: string,
+    selector: K
+  ) => {
+    const [state, setState] = React.useState<ReturnType<K>>(
+      selector(this.getState())
+    )
+
+    React.useEffect(() => {
+      const forceUpdate = () => setState(selector(this.getState()))
+      this.addListener(path, forceUpdate)
+      return () => void this.removeListener(path, forceUpdate)
     }, [])
+
+    return state
   }
 }
 
