@@ -1,6 +1,5 @@
 import * as React from "react"
 import { EventEmitter } from "eventemitter3"
-import { diff } from "./diff"
 import { Difference } from "./types"
 import _cloneDeep from "lodash.clonedeep"
 
@@ -10,58 +9,154 @@ const structuredClone =
     : _cloneDeep
 
 export class LiquorStore<T extends Record<string, any>> extends EventEmitter {
-  constructor(initial: T) {
+  constructor(initial: T, transient?: RegExp) {
     super()
-    this.prev = initial
-    this.current = initial
+    this._prev = initial
+    this._current = initial
+    this._transient = transient
   }
 
-  private prev: T
-  private current: T
-  private pointer = -1
-  private history: Difference[][] = []
-  private isPaused = false
-  private didChangeWhilePaused = false
-  private subscriptions = new Set<() => void>()
+  _prev: T
+  _current: T
+  _pointer = -1
+  _didChangeWhilePaused = false
+  _subscriptions = new Set<() => void>()
+  readonly _transient?: RegExp
+
+  history: Difference[][] = []
+  isPaused = false
 
   // PRIVATE
 
-  protected willChange() {
+  _willChange() {
     if (this.isPaused) {
-      if (!this.didChangeWhilePaused) {
-        this.prev = this.current
-        this.didChangeWhilePaused = true
+      if (!this._didChangeWhilePaused) {
+        this._prev = this._current
+        this._didChangeWhilePaused = true
       }
       return
     }
 
-    this.prev = this.current
+    this._prev = this._current
   }
 
-  protected didChange(patch: Difference[]) {
+  _didChange(patch: Difference[]) {
     if (!this.isPaused) {
-      this.history = this.history.splice(0, this.pointer + 1)
+      this.history = this.history.splice(0, this._pointer + 1)
       this.history.push(patch)
-      this.pointer++
+      this._pointer++
     }
 
-    this.notifySubscriptions(patch, true)
+    this._notifySubscriptions(patch, true)
   }
 
-  protected notifySubscriptions(patch: Difference[], history: boolean) {
+  _notifySubscriptions(patch: Difference[], history: boolean) {
     this.emit("change", this, patch, history)
-    this.subscriptions.forEach((l) => l())
+    this._subscriptions.forEach((l) => l())
   }
 
-  applyPatch(patch: Difference[], inverse?: boolean) {
+  _diff(
+    obj: Record<string, any> | any[],
+    newObj: Record<string, any> | any[],
+    _stack: Record<string, any>[] = []
+  ): Difference[] {
+    let diffs: Difference[] = []
+    const isObjArray = Array.isArray(obj)
+
+    for (const key in obj) {
+      const oldObjValue = (obj as any)[key]
+      const path = isObjArray ? +key : key
+
+      // REMOVE
+      if (!(key in newObj)) {
+        diffs.push({
+          type: "REMOVE",
+          path: [path],
+          oldValue: (obj as any)[key],
+        })
+        continue
+      }
+
+      const newObjValue = (newObj as any)[key]
+      const areObjects =
+        typeof oldObjValue === "object" && typeof newObjValue === "object"
+
+      if (
+        oldObjValue &&
+        newObjValue &&
+        areObjects &&
+        !richTypes[Object.getPrototypeOf(oldObjValue).constructor.name]
+      ) {
+        // OBJ TO OBJ, NESTED DIFFS
+        const nestedDiffs = this._diff(
+          oldObjValue,
+          newObjValue,
+          _stack.concat([oldObjValue])
+        )
+        diffs.push.apply(
+          diffs,
+          nestedDiffs.map((difference) => {
+            difference.path.unshift(path)
+            return difference
+          })
+        )
+      } else if (
+        // CHANGE
+        oldObjValue !== newObjValue &&
+        !(
+          areObjects &&
+          (isNaN(oldObjValue)
+            ? oldObjValue + "" === newObjValue + ""
+            : +oldObjValue === +newObjValue)
+        )
+      ) {
+        diffs.push({
+          path: [path],
+          type: "CHANGE",
+          value: newObjValue,
+          oldValue: oldObjValue,
+        })
+      }
+    }
+
+    // ARRAY
+    const isNewObjArray = Array.isArray(newObj)
+
+    for (const key in newObj) {
+      if (!(key in obj)) {
+        diffs.push({
+          type: "CREATE",
+          path: [isNewObjArray ? +key : key],
+          value: (newObj as any)[key],
+        })
+      }
+    }
+
+    const { _transient } = this
+
+    if (_transient) {
+      diffs.forEach((diff) => {
+        if (_transient.test(diff.path.join("."))) {
+          diff.transient = true
+        }
+      })
+    }
+
+    return diffs
+  }
+
+  _applyPatch(patch: Difference[], inverse?: boolean, skipTransient?: boolean) {
     const refs = new Set<string | number>()
     const lastRefs = new Set<string | number>()
     const delQueue: (() => void)[] = []
-    const next = Object.assign({}, this.current)
+    const next = Object.assign({}, this._current)
 
     // For each operation in the patch...
     for (const op of patch) {
-      const { path } = op
+      const { path, transient } = op
+
+      if (skipTransient && transient) continue
+
       let secondToLastKey = path[path.length - 2]
       let lastKey = path[path.length - 1]
 
@@ -156,12 +251,12 @@ export class LiquorStore<T extends Record<string, any>> extends EventEmitter {
   // PUBLIC API
 
   subscribe = (listener: () => void) => {
-    this.subscriptions.add(listener)
-    return () => this.subscriptions.delete(listener)
+    this._subscriptions.add(listener)
+    return () => this._subscriptions.delete(listener)
   }
 
   /**
-   * Set a new state by mutating the current state.
+   * Set a new state by mutating the _current state.
    *
    * @example
    * store.mutate(state => {
@@ -169,23 +264,26 @@ export class LiquorStore<T extends Record<string, any>> extends EventEmitter {
    *  state.settings.darkMode = true
    * })
    *
-   * @param mutator A function that receives the current state and mutates it.
+   * @param mutator A function that receives the _current state and mutates it.
    * @public
    */
 
   mutate = (mutator: (state: T) => void, history = true) => {
-    const draft = structuredClone(this.current)
+    const draft = structuredClone(this._current)
     mutator(draft)
-    const patch: Difference[] = diff(this.current, this.processState(draft))
-    const next = this.applyPatch(patch)
+    const patch: Difference[] = this._diff(
+      this._current,
+      this.processState(draft)
+    )
+    const next = this._applyPatch(patch)
 
     if (history) {
-      this.willChange()
-      this.current = next
-      this.didChange(patch)
+      this._willChange()
+      this._current = next
+      this._didChange(patch)
     } else {
-      this.current = next
-      this.notifySubscriptions(patch, false)
+      this._current = next
+      this._notifySubscriptions(patch, false)
     }
 
     return this
@@ -200,15 +298,15 @@ export class LiquorStore<T extends Record<string, any>> extends EventEmitter {
    * })
    */
   update = (fn: (state: T) => void, history = true) => {
-    this.willChange()
-    const tNext = Object.assign({}, this.current)
+    this._willChange()
+    const tNext = Object.assign({}, this._current)
     fn(tNext)
-    this.current = this.processState(tNext)
-    const patch = diff(this.prev, this.current)
+    this._current = this.processState(tNext)
+    const patch = this._diff(this._prev, this._current)
     if (history) {
-      this.didChange(patch)
+      this._didChange(patch)
     } else {
-      this.notifySubscriptions(patch, history)
+      this._notifySubscriptions(patch, history)
     }
     return this
   }
@@ -221,7 +319,7 @@ export class LiquorStore<T extends Record<string, any>> extends EventEmitter {
    */
   pause = () => {
     this.isPaused = true
-    this.notifySubscriptions([], false)
+    this._notifySubscriptions([], false)
     this.emit("pause", this)
     return this
   }
@@ -233,19 +331,19 @@ export class LiquorStore<T extends Record<string, any>> extends EventEmitter {
    * @public
    */
   resume = () => {
-    if (this.didChangeWhilePaused) {
+    if (this._didChangeWhilePaused) {
       // Commit an entry to the history
-      const change = diff(this.prev, this.current)
-      this.prev = this.current
-      this.history = this.history.splice(0, this.pointer + 1)
+      const change = this._diff(this._prev, this._current)
+      this._prev = this._current
+      this.history = this.history.splice(0, this._pointer + 1)
       this.history.push(change)
-      this.pointer++
-      this.didChangeWhilePaused = false
+      this._pointer++
+      this._didChangeWhilePaused = false
     }
 
     this.isPaused = false
     this.emit("resume")
-    this.notifySubscriptions([], false)
+    this._notifySubscriptions([], false)
     return this
   }
 
@@ -258,24 +356,24 @@ export class LiquorStore<T extends Record<string, any>> extends EventEmitter {
   undo = () => {
     if (this.isPaused) {
       // Resume and undo anything that has changed since we paused
-      if (this.didChangeWhilePaused) {
-        this.history = this.history.splice(0, this.pointer + 1)
-        this.history.push(diff(this.prev, this.current))
-        this.pointer = this.history.length - 1
-        this.didChangeWhilePaused = false
+      if (this._didChangeWhilePaused) {
+        this.history = this.history.splice(0, this._pointer + 1)
+        this.history.push(this._diff(this._prev, this._current))
+        this._pointer = this.history.length - 1
+        this._didChangeWhilePaused = false
       }
       this.isPaused = false
     }
 
     if (this.canUndo) {
-      const patch = this.history[this.pointer]
+      const patch = this.history[this._pointer]
 
-      this.pointer--
-      this.prev = this.current
-      this.current = this.applyPatch(patch, true)
+      this._pointer--
+      this._prev = this._current
+      this._current = this._applyPatch(patch, true, true)
 
       this.emit("undo")
-      this.notifySubscriptions(patch, false)
+      this._notifySubscriptions(patch, false)
     }
 
     return this
@@ -289,11 +387,11 @@ export class LiquorStore<T extends Record<string, any>> extends EventEmitter {
    */
   redo = () => {
     if (this.isPaused) {
-      if (this.didChangeWhilePaused) {
-        this.history = this.history.splice(0, this.pointer + 1)
-        this.history.push(diff(this.prev, this.current))
-        this.pointer = this.history.length - 1
-        this.didChangeWhilePaused = false
+      if (this._didChangeWhilePaused) {
+        this.history = this.history.splice(0, this._pointer + 1)
+        this.history.push(this._diff(this._prev, this._current))
+        this._pointer = this.history.length - 1
+        this._didChangeWhilePaused = false
         return
       }
 
@@ -301,15 +399,15 @@ export class LiquorStore<T extends Record<string, any>> extends EventEmitter {
     }
 
     if (this.canRedo) {
-      this.pointer++
+      this._pointer++
 
-      const patch = this.history[this.pointer]
+      const patch = this.history[this._pointer]
 
-      this.prev = this.current
-      this.current = this.applyPatch(patch)
+      this._prev = this._current
+      this._current = this._applyPatch(patch, false, true)
 
       this.emit("redo")
-      this.notifySubscriptions(patch, false)
+      this._notifySubscriptions(patch, false)
     }
 
     return this
@@ -324,14 +422,14 @@ export class LiquorStore<T extends Record<string, any>> extends EventEmitter {
   }
 
   /**
-   * Get the current state.
-   * @returns boolean The current state.
+   * Get the _current state.
+   * @returns boolean The _current state.
    * @example
    * store.getState()
    * @public
    */
   getState = () => {
-    return this.current
+    return this._current
   }
 
   /**
@@ -373,8 +471,8 @@ export class LiquorStore<T extends Record<string, any>> extends EventEmitter {
    */
   get canUndo() {
     return (
-      this.pointer >= 0 ||
-      (this.pointer === 0 && this.isPaused && this.didChangeWhilePaused)
+      this._pointer >= 0 ||
+      (this._pointer === 0 && this.isPaused && this._didChangeWhilePaused)
     )
   }
 
@@ -383,11 +481,11 @@ export class LiquorStore<T extends Record<string, any>> extends EventEmitter {
    * @public
    */
   get canRedo() {
-    return this.pointer < this.history.length - 1
+    return this._pointer < this.history.length - 1
   }
 
   get state() {
-    return this.current
+    return this._current
   }
 
   /* -------------------- // React -------------------- */
@@ -447,3 +545,10 @@ export class LiquorStore<T extends Record<string, any>> extends EventEmitter {
 }
 
 const REMOVE_SYMBOL = Symbol("remove")
+
+const richTypes: Record<string, boolean> = {
+  Date: true,
+  RegExp: true,
+  String: true,
+  Number: true,
+}

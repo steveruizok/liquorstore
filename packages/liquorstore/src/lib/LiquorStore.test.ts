@@ -99,3 +99,65 @@ it("array inside object", () => {
     children: ["Donny"],
   })
 })
+
+/* -------------------- Transient ------------------- */
+
+describe("transient", () => {
+  it("Applies data marked as transient", () => {
+    const store = new LiquorStore(
+      {
+        user: {
+          name: "Steve",
+          age: 93,
+          friends: [],
+        },
+        transient: {
+          thing: "hello",
+        },
+      },
+      new RegExp(`^transient\.*`)
+    )
+
+    store.mutate((s) => {
+      s.user.name = "Steve2"
+      s.transient.thing = "hello2"
+    })
+
+    expect(store.state).toMatchObject({
+      user: {
+        name: "Steve2",
+        age: 93,
+        friends: [],
+      },
+      transient: {
+        thing: "hello2",
+      },
+    })
+
+    store.undo()
+
+    expect(store.state).toMatchObject({
+      user: {
+        name: "Steve",
+        age: 93,
+        friends: [],
+      },
+      transient: {
+        thing: "hello2",
+      },
+    })
+
+    store.redo()
+
+    expect(store.state).toMatchObject({
+      user: {
+        name: "Steve2",
+        age: 93,
+        friends: [],
+      },
+      transient: {
+        thing: "hello2",
+      },
+    })
+  })
+})

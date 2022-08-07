@@ -1,5 +1,11 @@
 # trashly-react
 
+## 0.3.2
+
+### Patch Changes
+
+- Adds transient.
+
 ## 0.3.1
 
 ### Patch Changes
